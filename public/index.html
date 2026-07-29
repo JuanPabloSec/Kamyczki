@@ -91,6 +91,9 @@
             <button type="button" class="pill" data-spot-filter="left">Zostawione</button>
             <button type="button" class="pill" data-spot-filter="found">Znalezione</button>
           </div>
+          <button type="button" class="btn btn-ghost active" id="btn-cemeteries" aria-pressed="true" title="Pokaż cmentarze z OpenStreetMap">
+            🪦 Cmentarze
+          </button>
           <button type="button" class="btn btn-primary" id="btn-locate">Moja lokalizacja</button>
         </div>
       </div>
@@ -98,6 +101,13 @@
         <div id="map" role="application" aria-label="Mapa kamyczków"></div>
         <aside class="map-side" id="map-side">
           <p class="map-hint">Kliknij mapę, aby dodać punkt (wymaga konta).</p>
+          <div class="cemetery-legend">
+            <div class="cemetery-swatch" aria-hidden="true"></div>
+            <div>
+              <strong>Cmentarze</strong>
+              <p id="cemetery-status" class="map-hint" style="margin:0.25rem 0 0">Przybliż mapę, by wczytać cmentarze.</p>
+            </div>
+          </div>
           <div id="map-spot-list" class="spot-list"></div>
         </aside>
       </div>
