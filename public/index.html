@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Kamyczki — maluj, ukrywaj i znajduj malowane kamienie. Kolekcja zdjęć i mapa społeczności." />
+  <title>Kamyczki — maluj, ukrywaj, znajduj</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪨</text></svg>" />
+</head>
+<body>
+  <div class="bg-orbs" aria-hidden="true">
+    <span class="orb orb-1"></span>
+    <span class="orb orb-2"></span>
+    <span class="orb orb-3"></span>
+  </div>
+
+  <header class="header">
+    <div class="container header-inner">
+      <a href="#home" class="logo" data-nav="home">
+        <span class="logo-icon" aria-hidden="true">🪨</span>
+        <span class="logo-text">Kamyczki</span>
+      </a>
+      <nav class="nav" aria-label="Główne">
+        <button type="button" class="nav-btn" data-nav="home">Start</button>
+        <button type="button" class="nav-btn" data-nav="map">Mapa</button>
+        <button type="button" class="nav-btn" data-nav="collection">Kolekcja</button>
+        <button type="button" class="nav-btn" data-nav="feed">Aktualności</button>
+      </nav>
+      <div class="header-auth" id="header-auth">
+        <button type="button" class="btn btn-ghost" data-nav="login">Zaloguj</button>
+        <button type="button" class="btn btn-primary" data-nav="register">Załóż konto</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+    <!-- HOME -->
+    <section class="view container" id="view-home">
+      <div class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Zabawa w duchu #kamyczki</p>
+          <h1>Maluj. Ukrywaj. Znajduj. <em>Puszczaj dalej.</em></h1>
+          <p class="lede">
+            Jak w popularnej zabawie z Facebooka: ozdabiasz kamyczki, zostawiasz je w świecie
+            i śledzisz ich podróż. Tutaj masz <strong>kolekcję ze zdjęciami</strong> oraz
+            <strong>mapę</strong>, na której społeczność oznacza miejsca zostawienia i znalezienia.
+          </p>
+          <div class="hero-actions">
+            <button type="button" class="btn btn-primary" data-nav="register">Dołącz do zabawy</button>
+            <button type="button" class="btn btn-ghost" data-nav="map">Otwórz mapę</button>
+          </div>
+        </div>
+        <div class="hero-card">
+          <h2>Jak to działa?</h2>
+          <ol class="steps">
+            <li><strong>Malujesz</strong> kamień farbami lub markerami</li>
+            <li><strong>Dodajesz zdjęcie</strong> do swojej kolekcji i dostajesz kod (np. KAM-AB12CD)</li>
+            <li>Na odwrocie piszesz kod i <strong>#kamyczki</strong></li>
+            <li><strong>Zostawiasz</strong> kamyczek w ciekawym miejscu — zaznaczasz na mapie</li>
+            <li>Ktoś <strong>znajduje</strong>, robi zdjęcie, oznacza na mapie i puszcza dalej</li>
+          </ol>
+          <p class="hero-note">
+            Inspiracja:
+            <a href="https://www.facebook.com/groups/555702945342044/" target="_blank" rel="noopener noreferrer">grupa #kamyczki na Facebooku</a>
+          </p>
+        </div>
+      </div>
+
+      <div class="stats-row" id="home-stats">
+        <article class="mini-stat"><p class="value" id="stat-stones">—</p><p class="label">kamyczków w kolekcjach</p></article>
+        <article class="mini-stat"><p class="value" id="stat-spots">—</p><p class="label">punktów na mapie</p></article>
+        <article class="mini-stat"><p class="value" id="stat-found">—</p><p class="label">znalezień</p></article>
+      </div>
+    </section>
+
+    <!-- MAP -->
+    <section class="view container view-map" id="view-map" hidden>
+      <div class="view-head">
+        <div>
+          <h1 class="page-title">Mapa kamyczków</h1>
+          <p class="page-sub">Zaznacz, gdzie zostawiłeś lub znalazłeś kamyczek. Kliknij mapę, by dodać punkt.</p>
+        </div>
+        <div class="view-actions">
+          <div class="filter-pills" role="group" aria-label="Filtr punktów">
+            <button type="button" class="pill active" data-spot-filter="all">Wszystkie</button>
+            <button type="button" class="pill" data-spot-filter="left">Zostawione</button>
+            <button type="button" class="pill" data-spot-filter="found">Znalezione</button>
+          </div>
+          <button type="button" class="btn btn-primary" id="btn-locate">Moja lokalizacja</button>
+        </div>
+      </div>
+      <div class="map-shell">
+        <div id="map" role="application" aria-label="Mapa kamyczków"></div>
+        <aside class="map-side" id="map-side">
+          <p class="map-hint">Kliknij mapę, aby dodać punkt (wymaga konta).</p>
+          <div id="map-spot-list" class="spot-list"></div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- COLLECTION -->
+    <section class="view container" id="view-collection" hidden>
+      <div class="view-head">
+        <div>
+          <h1 class="page-title">Moja kolekcja</h1>
+          <p class="page-sub">Zdjęcia Twoich namalowanych kamyczków. Każdy dostaje unikalny kod do śledzenia.</p>
+        </div>
+        <button type="button" class="btn btn-primary" id="btn-add-stone">+ Dodaj kamyczek</button>
+      </div>
+      <div id="collection-guest" class="empty-panel" hidden>
+        <h2>Zaloguj się, by zarządzać kolekcją</h2>
+        <p>Załóż darmowe konto i dodawaj zdjęcia swoich kamyczków.</p>
+        <button type="button" class="btn btn-primary" data-nav="register">Załóż konto</button>
+      </div>
+      <div id="collection-grid" class="stone-grid"></div>
+      <div id="collection-empty" class="empty-panel" hidden>
+        <div class="empty-icon">🎨</div>
+        <h2>Kolekcja jest pusta</h2>
+        <p>Dodaj zdjęcie pierwszego namalowanego kamyczka.</p>
+      </div>
+    </section>
+
+    <!-- FEED -->
+    <section class="view container" id="view-feed" hidden>
+      <div class="view-head">
+        <div>
+          <h1 class="page-title">Aktualności społeczności</h1>
+          <p class="page-sub">Ostatnie zostawienia i znalezienia na mapie.</p>
+        </div>
+      </div>
+      <div id="feed-list" class="feed-list"></div>
+    </section>
+
+    <!-- AUTH -->
+    <section class="view container view-auth" id="view-login" hidden>
+      <div class="auth-card">
+        <h1>Zaloguj się</h1>
+        <p class="page-sub">Witaj z powrotem w zabawie kamyczkami.</p>
+        <form id="form-login" class="auth-form">
+          <label class="field"><span>E-mail lub nazwa użytkownika</span><input type="text" name="login" required autocomplete="username" /></label>
+          <label class="field"><span>Hasło</span><input type="password" name="password" required autocomplete="current-password" /></label>
+          <p class="form-error" id="login-error" hidden></p>
+          <button type="submit" class="btn btn-primary btn-block">Zaloguj</button>
+        </form>
+        <p class="auth-switch">Nie masz konta? <button type="button" class="link-btn" data-nav="register">Zarejestruj się</button></p>
+      </div>
+    </section>
+
+    <section class="view container view-auth" id="view-register" hidden>
+      <div class="auth-card">
+        <h1>Załóż konto</h1>
+        <p class="page-sub">Dołącz do społeczności malowanych kamyczków.</p>
+        <form id="form-register" class="auth-form">
+          <label class="field"><span>Nazwa użytkownika</span><input type="text" name="username" required minlength="3" maxlength="32" autocomplete="username" /></label>
+          <label class="field"><span>E-mail</span><input type="email" name="email" required autocomplete="email" /></label>
+          <label class="field"><span>Hasło (min. 6 znaków)</span><input type="password" name="password" required minlength="6" autocomplete="new-password" /></label>
+          <div class="field-row">
+            <label class="field"><span>Kod pocztowy</span><input type="text" name="postalCode" placeholder="np. 00-001" maxlength="10" /></label>
+            <label class="field"><span>Miasto</span><input type="text" name="city" placeholder="opcjonalnie" maxlength="80" /></label>
+          </div>
+          <p class="form-error" id="register-error" hidden></p>
+          <button type="submit" class="btn btn-primary btn-block">Utwórz konto</button>
+        </form>
+        <p class="auth-switch">Masz już konto? <button type="button" class="link-btn" data-nav="login">Zaloguj się</button></p>
+      </div>
+    </section>
+
+    <!-- TRACK CODE -->
+    <section class="view container" id="view-track" hidden>
+      <div class="view-head">
+        <div>
+          <h1 class="page-title">Śledzenie kamyczka</h1>
+          <p class="page-sub" id="track-sub">Historia podróży</p>
+        </div>
+        <button type="button" class="btn btn-ghost" data-nav="map">Wróć do mapy</button>
+      </div>
+      <div id="track-content"></div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <p>Kamyczki · zabawa społecznościowa · <a href="https://www.facebook.com/groups/555702945342044/" target="_blank" rel="noopener noreferrer">#kamyczki FB</a></p>
+      <a href="https://github.com/JuanPabloSec/Kamyczki" target="_blank" rel="noopener noreferrer">GitHub</a>
+    </div>
+  </footer>
+
+  <!-- Modal: add stone -->
+  <dialog class="modal" id="modal-stone">
+    <form method="dialog" id="form-stone" class="modal-card">
+      <header class="modal-header">
+        <h2>Nowy kamyczek</h2>
+        <button type="button" class="icon-btn" data-close="modal-stone" aria-label="Zamknij">×</button>
+      </header>
+      <div class="modal-body">
+        <label class="field"><span>Nazwa / motyw</span><input type="text" name="name" required maxlength="80" placeholder="np. Biedronka z Sopotu" /></label>
+        <label class="field"><span>Opis</span><textarea name="description" rows="3" maxlength="500" placeholder="Co namalowałeś? Dla kogo wędrowny skarb?"></textarea></label>
+        <label class="field">
+          <span>Zdjęcie kamyczka</span>
+          <input type="file" name="photo" accept="image/jpeg,image/png,image/webp,image/gif" required />
+        </label>
+        <div class="preview-box" id="stone-preview" hidden><img alt="Podgląd" /></div>
+        <p class="form-error" id="stone-error" hidden></p>
+      </div>
+      <footer class="modal-footer">
+        <button type="button" class="btn btn-ghost" data-close="modal-stone">Anuluj</button>
+        <button type="submit" class="btn btn-primary">Zapisz w kolekcji</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- Modal: add map spot -->
+  <dialog class="modal" id="modal-spot">
+    <form method="dialog" id="form-spot" class="modal-card">
+      <header class="modal-header">
+        <h2 id="spot-modal-title">Punkt na mapie</h2>
+        <button type="button" class="icon-btn" data-close="modal-spot" aria-label="Zamknij">×</button>
+      </header>
+      <div class="modal-body">
+        <input type="hidden" name="lat" id="spot-lat" />
+        <input type="hidden" name="lng" id="spot-lng" />
+        <p class="coords" id="spot-coords"></p>
+        <fieldset class="field type-field">
+          <legend>Co się stało?</legend>
+          <label class="radio-card"><input type="radio" name="type" value="left" checked /> <span>Zostawiłem / ukryłem tu kamyczek</span></label>
+          <label class="radio-card"><input type="radio" name="type" value="found" /> <span>Znalazłem tu kamyczek</span></label>
+        </fieldset>
+        <label class="field"><span>Nazwa miejsca</span><input type="text" name="placeName" maxlength="120" placeholder="np. Park Łazienki, przy fontannie" /></label>
+        <label class="field"><span>Kod kamyczka (opcjonalnie)</span><input type="text" name="code" maxlength="20" placeholder="KAM-XXXXXX — jeśli jest na odwrocie" /></label>
+        <label class="field" id="spot-stone-wrap" hidden>
+          <span>Albo wybierz ze swojej kolekcji</span>
+          <select name="stoneId" id="spot-stone-select"><option value="">— bez powiązania —</option></select>
+        </label>
+        <label class="field"><span>Notatka</span><textarea name="note" rows="2" maxlength="400" placeholder="Krótka historia znalezienia / ukrycia…"></textarea></label>
+        <label class="field"><span>Zdjęcie z miejsca (opcjonalnie)</span><input type="file" name="photo" accept="image/jpeg,image/png,image/webp,image/gif" /></label>
+        <p class="form-error" id="spot-error" hidden></p>
+      </div>
+      <footer class="modal-footer">
+        <button type="button" class="btn btn-ghost" data-close="modal-spot">Anuluj</button>
+        <button type="submit" class="btn btn-primary">Zapisz na mapie</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- Modal: stone detail -->
+  <dialog class="modal" id="modal-detail">
+    <div class="modal-card">
+      <header class="modal-header">
+        <h2 id="detail-title">Kamyczek</h2>
+        <button type="button" class="icon-btn" data-close="modal-detail" aria-label="Zamknij">×</button>
+      </header>
+      <div class="modal-body" id="detail-body"></div>
+      <footer class="modal-footer" id="detail-footer"></footer>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" hidden role="status"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>

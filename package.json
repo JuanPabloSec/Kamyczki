@@ -1,0 +1,28 @@
+{
+  "name": "kamyczki",
+  "version": "1.0.0",
+  "description": "Aplikacja do zabawy #kamyczki — maluj, ukrywaj, znajduj i śledź kamyczki na mapie",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "kamyczki",
+    "painted-rocks",
+    "mapa",
+    "kolekcja"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.0.1",
+    "uuid": "^11.1.0"
+  }
+}
