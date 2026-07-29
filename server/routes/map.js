@@ -5,7 +5,6 @@ const multer = require("multer");
 const { v4: uuid } = require("uuid");
 const db = require("../db");
 const { authRequired, optionalAuth } = require("../auth");
-const { getCemeteriesGeoJSON } = require("../cemeteries");
 
 const router = express.Router();
 
@@ -183,40 +182,6 @@ router.get("/feed", (_req, res) => {
     .slice(0, 30)
     .map((sp) => enrichSpot(sp, data));
   res.json({ feed });
-});
-
-/**
- * GET /api/map/cemeteries?south=&west=&north=&east=
- * Cemeteries from OpenStreetMap (polygons with real footprints when available).
- */
-router.get("/cemeteries", async (req, res) => {
-  try {
-    const south = Number(req.query.south);
-    const west = Number(req.query.west);
-    const north = Number(req.query.north);
-    const east = Number(req.query.east);
-    const mode = req.query.mode === "points" ? "points" : "full";
-    const result = await getCemeteriesGeoJSON({
-      south,
-      west,
-      north,
-      east,
-      mode,
-    });
-    res.json({
-      type: "FeatureCollection",
-      features: result.geojson.features,
-      count: result.count,
-      cached: result.cached,
-      mode: result.mode,
-      source: "OpenStreetMap / Overpass",
-    });
-  } catch (err) {
-    const status = err.status || 502;
-    res.status(status).json({
-      error: err.message || "Nie udało się pobrać cmentarzy.",
-    });
-  }
 });
 
 module.exports = router;

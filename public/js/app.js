@@ -6,19 +6,8 @@ const state = {
   spots: [],
   map: null,
   markersLayer: null,
-  cemeteryLayer: null,
-  showCemeteries: true,
-  cemeteryCount: 0,
-  cemeteryLoading: false,
-  cemeteryTimer: null,
-  skipMapClick: false,
   pendingLatLng: null,
 };
-
-/** Full polygon shapes from OSM */
-const CEMETERY_SHAPE_ZOOM = 12;
-/** Point markers (centers) — wider overview */
-const CEMETERY_POINTS_ZOOM = 9;
 
 // —— Helpers ——
 function $(sel, root = document) {
@@ -157,30 +146,18 @@ async function loadHomeStats() {
 function initMap() {
   if (state.map) {
     setTimeout(() => state.map.invalidateSize(), 50);
-    scheduleCemeteries();
     return;
   }
 
   state.map = L.map("map", { zoomControl: true }).setView([52.1, 19.4], 6);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
-    attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · cmentarze OSM',
-  }).addTo(state.map);
-
-  state.cemeteryLayer = L.geoJSON(null, {
-    style: cemeteryStyle,
-    pointToLayer: cemeteryPoint,
-    onEachFeature: onCemeteryFeature,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
   }).addTo(state.map);
 
   state.markersLayer = L.layerGroup().addTo(state.map);
 
   state.map.on("click", (e) => {
-    if (state.skipMapClick) {
-      state.skipMapClick = false;
-      return;
-    }
     if (!API.user) {
       toast("Zaloguj się, aby dodać punkt na mapie");
       navigate("login");
@@ -189,155 +166,7 @@ function initMap() {
     openSpotModal(e.latlng.lat, e.latlng.lng);
   });
 
-  state.map.on("moveend", () => scheduleCemeteries());
-  state.map.on("zoomend", () => {
-    updateCemeteryUi();
-    scheduleCemeteries();
-  });
-
-  setTimeout(() => {
-    state.map.invalidateSize();
-    scheduleCemeteries();
-  }, 100);
-}
-
-function cemeteryStyle() {
-  return {
-    color: "#7d6b8a",
-    weight: 1.5,
-    opacity: 0.9,
-    fillColor: "#5c4a63",
-    fillOpacity: 0.38,
-  };
-}
-
-function cemeteryPoint(feature, latlng) {
-  return L.circleMarker(latlng, {
-    radius: 7,
-    color: "#9a86a8",
-    weight: 1.5,
-    fillColor: "#6b5578",
-    fillOpacity: 0.75,
-  });
-}
-
-function onCemeteryFeature(feature, layer) {
-  const name = feature.properties?.name || "Cmentarz";
-  const religion = feature.properties?.religion
-    ? `<br><small>Wyznanie: ${escapeHtml(feature.properties.religion)}</small>`
-    : "";
-  const osm = feature.properties?.id
-    ? `<br><small class="muted">OSM ${escapeHtml(feature.properties.id)}</small>`
-    : "";
-  layer.bindPopup(
-    `<strong>🪦 ${escapeHtml(name)}</strong>${religion}${osm}<br><small>Kształt z OpenStreetMap</small>`
-  );
-  layer.on("click", () => {
-    state.skipMapClick = true;
-  });
-}
-
-function scheduleCemeteries() {
-  if (!state.map || !state.showCemeteries) return;
-  clearTimeout(state.cemeteryTimer);
-  state.cemeteryTimer = setTimeout(() => loadCemeteries(), 450);
-}
-
-function updateCemeteryUi() {
-  const status = $("#cemetery-status");
-  const btn = $("#btn-cemeteries");
-  if (btn) {
-    btn.classList.toggle("active", state.showCemeteries);
-    btn.setAttribute("aria-pressed", state.showCemeteries ? "true" : "false");
-  }
-  if (!status) return;
-
-  if (!state.showCemeteries) {
-    status.textContent = "Warstwa cmentarzy wyłączona.";
-    return;
-  }
-  if (!state.map) return;
-  const z = state.map.getZoom();
-  if (z < CEMETERY_POINTS_ZOOM) {
-    status.textContent = `Przybliż mapę (zoom ${CEMETERY_POINTS_ZOOM}+), aby zobaczyć cmentarze z OSM.`;
-    return;
-  }
-  if (state.cemeteryLoading) {
-    status.textContent = "Ładowanie cmentarzy z OpenStreetMap…";
-    return;
-  }
-  if (z >= CEMETERY_SHAPE_ZOOM) {
-    status.textContent = `Cmentarze w widoku: ${state.cemeteryCount} — kontury z OSM.`;
-  } else {
-    status.textContent = `Cmentarze w widoku: ${state.cemeteryCount} (punkty). Zoom ${CEMETERY_SHAPE_ZOOM}+ = pełne kształty.`;
-  }
-}
-
-async function loadCemeteries() {
-  if (!state.map || !state.cemeteryLayer || !state.showCemeteries) return;
-
-  const z = state.map.getZoom();
-  if (z < CEMETERY_POINTS_ZOOM) {
-    state.cemeteryLayer.clearLayers();
-    state.cemeteryCount = 0;
-    updateCemeteryUi();
-    return;
-  }
-
-  const mode = z >= CEMETERY_SHAPE_ZOOM ? "full" : "points";
-  const b = state.map.getBounds();
-  const bbox = {
-    south: b.getSouth(),
-    west: b.getWest(),
-    north: b.getNorth(),
-    east: b.getEast(),
-    mode,
-  };
-
-  const area = (bbox.north - bbox.south) * (bbox.east - bbox.west);
-  const maxArea = mode === "full" ? 2.5 : 12;
-  if (area > maxArea) {
-    state.cemeteryLayer.clearLayers();
-    state.cemeteryCount = 0;
-    const status = $("#cemetery-status");
-    if (status) status.textContent = "Obszar za duży — przybliż mapę.";
-    return;
-  }
-
-  state.cemeteryLoading = true;
-  updateCemeteryUi();
-
-  try {
-    const data = await API.cemeteries(bbox);
-    if (!state.showCemeteries || !state.cemeteryLayer) return;
-    state.cemeteryLayer.clearLayers();
-    state.cemeteryLayer.addData(data);
-    state.cemeteryCount = data.count ?? data.features?.length ?? 0;
-    state._cemeteryMode = mode;
-  } catch (e) {
-    state.cemeteryCount = 0;
-    const status = $("#cemetery-status");
-    if (status) status.textContent = e.message || "Błąd ładowania cmentarzy.";
-    return;
-  } finally {
-    state.cemeteryLoading = false;
-    updateCemeteryUi();
-  }
-}
-
-function toggleCemeteries() {
-  state.showCemeteries = !state.showCemeteries;
-  if (!state.showCemeteries) {
-    state.cemeteryLayer?.clearLayers();
-    state.cemeteryCount = 0;
-    updateCemeteryUi();
-    return;
-  }
-  if (state.map && state.cemeteryLayer && !state.map.hasLayer(state.cemeteryLayer)) {
-    state.cemeteryLayer.addTo(state.map);
-  }
-  scheduleCemeteries();
-  updateCemeteryUi();
+  setTimeout(() => state.map.invalidateSize(), 100);
 }
 
 function pinIcon(type) {
@@ -659,13 +488,10 @@ function bindEvents() {
         initMap();
         state.map.setView([pos.coords.latitude, pos.coords.longitude], 14);
         toast("Jesteś tu");
-        scheduleCemeteries();
       },
       () => toast("Nie udało się pobrać lokalizacji")
     );
   });
-
-  $("#btn-cemeteries")?.addEventListener("click", () => toggleCemeteries());
 
   $("#btn-add-stone")?.addEventListener("click", () => {
     if (!API.user) return navigate("login");

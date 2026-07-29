@@ -65,14 +65,4 @@ const API = {
   feed() {
     return this.request("/api/map/feed");
   },
-  cemeteries(bbox) {
-    const q = new URLSearchParams({
-      south: String(bbox.south),
-      west: String(bbox.west),
-      north: String(bbox.north),
-      east: String(bbox.east),
-      mode: bbox.mode || "full",
-    }).toString();
-    return this.request(`/api/map/cemeteries?${q}`);
-  },
 };
